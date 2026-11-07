@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- windowBackground must be the SAME color as in Compose, otherwise launch
+         flashes a different color before the first frame. -->
+    <style name="Theme.NimTv" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowShowWallpaper">false</item>
+        <item name="android:windowBackground">@color/nim_background</item>
+    </style>
+</resources>

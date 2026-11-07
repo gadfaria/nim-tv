@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Nim TV</string>
+    <string name="home_redirect_description">Abre o Nim TV quando você aperta o botão Home, no lugar da tela inicial do Google TV. Não lê nada da tela: só percebe qual app abriu.</string>
+</resources>
