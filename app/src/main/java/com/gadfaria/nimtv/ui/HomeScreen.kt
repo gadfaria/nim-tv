@@ -10,8 +10,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,9 +37,14 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.gadfaria.nimtv.data.AppInfo
+import com.gadfaria.nimtv.ui.theme.Foreground
 import com.gadfaria.nimtv.ui.theme.MutedForeground
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -90,7 +95,10 @@ fun HomeScreen(
                     onClick = { openAccessibilitySettings(context) },
                     modifier = Modifier.width(CONTENT_WIDTH),
                 )
+                Spacer(Modifier.height(16.dp))
             }
+
+            Signature()
         }
 
         // Full height whatever the number of favorites: "Todos os apps" always
@@ -143,6 +151,22 @@ fun HomeScreen(
 }
 
 private val CONTENT_WIDTH = 440.dp
+
+/** Author credit, quiet like a sidebar footer: muted, with the nick a step brighter. */
+@Composable
+private fun Signature() {
+    Text(
+        text = buildAnnotatedString {
+            append("powered by ")
+            withStyle(SpanStyle(color = Foreground, fontWeight = FontWeight.Medium)) {
+                append("gadfaria")
+            }
+        },
+        style = MaterialTheme.typography.labelMedium,
+        color = MutedForeground,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+}
 
 /**
  * Some TV builds (TCL on Android 11) don't handle the standard action and only
