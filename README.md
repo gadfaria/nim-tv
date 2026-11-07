@@ -3,6 +3,11 @@
 The Nim launcher, for Google TV. Text only: a clock, your favorites
 and an A–Z grid of every app, driven by the remote.
 
+Styled after the shadcn/ui components used in hub (Vault): the same `neutral`
+dark tokens, `--radius: 0.5rem` scale and Geist font, with Card, Input,
+Separator, Dialog and sidebar-item shapes rebuilt in Compose (`ui/theme/Theme.kt`,
+`ui/Card.kt`, `ui/TvItem.kt`). No icons: Nim stays text only.
+
 Built with Kotlin + Jetpack Compose, for personal use (TCL Google TV).
 
 ## Features
@@ -82,6 +87,11 @@ the terminal app lacks System Settings › Privacy & Security › Local Network.
 
 A Home pressed with `adb shell input keyevent HOME` bypasses the accessibility
 key filter, so it opens Nim TV only after the ~5 s delay. Test with the remote.
+
+## Font
+
+Geist (Light, Regular, Medium) from [vercel/geist-font](https://github.com/vercel/geist-font),
+under the SIL Open Font License — see [GEIST_LICENSE.txt](GEIST_LICENSE.txt).
 
 ## Tests
 

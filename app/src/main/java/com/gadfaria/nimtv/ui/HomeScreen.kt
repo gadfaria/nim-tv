@@ -7,11 +7,15 @@ import android.content.IntentFilter
 import android.provider.Settings as AndroidSettings
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.gadfaria.nimtv.data.AppInfo
-import com.gadfaria.nimtv.ui.theme.NimForegroundMuted
+import com.gadfaria.nimtv.ui.theme.MutedForeground
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -45,7 +49,7 @@ import java.util.Locale
 fun HomeScreen(
     favorites: List<AppInfo>,
     movingKey: String?,
-    homeRedirectEnabled: Boolean,
+    homeRedirectRunning: Boolean,
     onLaunch: (AppInfo) -> Unit,
     onOpenMenu: (AppInfo) -> Unit,
     onMove: (Int) -> Unit,
@@ -64,50 +68,81 @@ fun HomeScreen(
 
     BackHandler(enabled = movingKey != null, onBack = onStopMoving)
 
-    // ~5% margins: many TVs crop the edges of the picture (overscan).
-    Column(
+    // ~5% margins: many TVs crop the edges of the picture (overscan). Clock on
+    // the left, favorites on the right: a column of both doesn't fit 16:9 once
+    // there are more than a few favorites.
+    Row(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 27.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 48.dp, vertical = 27.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(Modifier.padding(horizontal = 16.dp)) { Clock() }
+        Column(Modifier.fillMaxHeight()) {
+            Column(Modifier.padding(horizontal = 16.dp)) { Clock() }
 
-        Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.weight(1f))
 
-        favorites.forEachIndexed { index, app ->
-            // key() keeps the focused node attached to its app as the list reorders.
-            key(app.key) {
-                val moving = app.key == movingKey
+            if (!homeRedirectRunning) {
                 TvItem(
-                    text = if (moving) "↕  ${app.label}" else app.label,
-                    onClick = { onLaunch(app) },
-                    onLongClick = { onOpenMenu(app) },
-                    modifier = Modifier
-                        .then(if (index == 0) Modifier.focusRequester(firstItem) else Modifier)
-                        .then(if (moving) Modifier.movingKeys(onMove, onStopMoving) else Modifier),
+                    text = "Ativar o botão Home em Acessibilidade",
+                    style = MaterialTheme.typography.bodyLarge,
+                    variant = TvItemVariant.Outline,
+                    onClick = { openAccessibilitySettings(context) },
+                    modifier = Modifier.width(CONTENT_WIDTH),
                 )
             }
         }
 
-        TvItem(
-            text = "todos os apps",
-            onClick = onOpenApps,
-            muted = true,
-            modifier = if (favorites.isEmpty()) Modifier.focusRequester(firstItem) else Modifier,
-        )
+        // Full height whatever the number of favorites: "Todos os apps" always
+        // sits at the bottom, like a sidebar footer.
+        NimCard(Modifier.width(CONTENT_WIDTH).fillMaxHeight()) {
+            GroupLabel("Favoritos")
 
-        if (!homeRedirectEnabled) {
-            Spacer(Modifier.height(40.dp))
+            // Only the list scrolls: the label and "Todos os apps" stay in place.
+            Column(
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                if (favorites.isEmpty()) {
+                    // CardDescription: what to do, instead of an empty card.
+                    Text(
+                        text = "Segure OK num app para favoritar.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MutedForeground,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+
+                favorites.forEachIndexed { index, app ->
+                    // key() keeps the focused node attached to its app as the list reorders.
+                    key(app.key) {
+                        val moving = app.key == movingKey
+                        TvItem(
+                            text = if (moving) "↕  ${app.label}" else app.label,
+                            onClick = { onLaunch(app) },
+                            onLongClick = { onOpenMenu(app) },
+                            modifier = Modifier
+                                .then(if (index == 0) Modifier.focusRequester(firstItem) else Modifier)
+                                .then(if (moving) Modifier.movingKeys(onMove, onStopMoving) else Modifier),
+                        )
+                    }
+                }
+            }
+
+            Separator()
+
             TvItem(
-                text = "Ativar o botão Home em Acessibilidade",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "Todos os apps",
+                onClick = onOpenApps,
                 muted = true,
-                onClick = { openAccessibilitySettings(context) },
+                modifier = if (favorites.isEmpty()) Modifier.focusRequester(firstItem) else Modifier,
             )
         }
     }
 }
+
+private val CONTENT_WIDTH = 440.dp
 
 /**
  * Some TV builds (TCL on Android 11) don't handle the standard action and only
@@ -191,6 +226,6 @@ private fun Clock() {
     Text(
         text = now.format(dateFormat),
         style = MaterialTheme.typography.bodyLarge,
-        color = NimForegroundMuted,
+        color = MutedForeground,
     )
 }

@@ -16,13 +16,13 @@ fun NimTvApp(viewModel: NimTvViewModel) {
     val query by viewModel.query.collectAsStateWithLifecycle()
     val menuApp by viewModel.menuApp.collectAsStateWithLifecycle()
     val movingKey by viewModel.movingKey.collectAsStateWithLifecycle()
-    val homeRedirectEnabled by viewModel.homeRedirectEnabled.collectAsStateWithLifecycle()
+    val homeRedirectRunning by viewModel.homeRedirectRunning.collectAsStateWithLifecycle()
 
     when (screen) {
         Screen.HOME -> HomeScreen(
             favorites = favorites,
             movingKey = movingKey,
-            homeRedirectEnabled = homeRedirectEnabled,
+            homeRedirectRunning = homeRedirectRunning,
             onLaunch = viewModel::launch,
             onOpenMenu = viewModel::openMenu,
             onMove = viewModel::moveMovingFavorite,

@@ -1,13 +1,13 @@
 package com.gadfaria.nimtv
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Makes the Home button open Nim TV.
@@ -33,6 +33,12 @@ class HomeRedirectService : AccessibilityService() {
 
     override fun onServiceConnected() {
         stockLaunchers = KNOWN_STOCK_LAUNCHERS + installedHomePackages()
+        _running.value = true
+    }
+
+    override fun onDestroy() {
+        _running.value = false
+        super.onDestroy()
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
@@ -88,11 +94,14 @@ class HomeRedirectService : AccessibilityService() {
             "com.google.android.tungsten.setupwraith",
         )
 
-        fun isEnabled(context: Context): Boolean {
-            val manager = context.getSystemService(AccessibilityManager::class.java)
-            return manager
-                .getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-                .any { it.resolveInfo.serviceInfo.packageName == context.packageName }
-        }
+        private val _running = MutableStateFlow(false)
+
+        /**
+         * Whether the service is actually running, not just switched on: TCL
+         * can leave an enabled service unbound (no auto-start permission), and
+         * rebinds it only seconds after an app update. Same process as the
+         * activity, so a static flow is enough.
+         */
+        val running: StateFlow<Boolean> = _running.asStateFlow()
     }
 }

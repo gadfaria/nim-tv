@@ -63,12 +63,7 @@ class NimTvViewModel(application: Application) : AndroidViewModel(application) {
     private val _movingKey = MutableStateFlow<String?>(null)
     val movingKey: StateFlow<String?> = _movingKey.asStateFlow()
 
-    private val _homeRedirectEnabled = MutableStateFlow(true)
-    val homeRedirectEnabled: StateFlow<Boolean> = _homeRedirectEnabled.asStateFlow()
-
-    fun refreshHomeRedirect() {
-        _homeRedirectEnabled.value = HomeRedirectService.isEnabled(getApplication())
-    }
+    val homeRedirectRunning: StateFlow<Boolean> = HomeRedirectService.running
 
     fun openApps() { _screen.value = Screen.APPS }
 

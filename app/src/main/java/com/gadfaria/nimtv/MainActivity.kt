@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import com.gadfaria.nimtv.ui.NimTvApp
-import com.gadfaria.nimtv.ui.theme.NimBackground
+import com.gadfaria.nimtv.ui.theme.Background
 import com.gadfaria.nimtv.ui.theme.NimTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,17 +28,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             NimTheme {
-                Box(Modifier.fillMaxSize().background(NimBackground)) {
+                Box(Modifier.fillMaxSize().background(Background)) {
                     NimTvApp(viewModel)
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // The user may have just come back from the accessibility settings.
-        viewModel.refreshHomeRedirect()
     }
 
     /** HOME (or the redirect service) while Nim TV is already open. */

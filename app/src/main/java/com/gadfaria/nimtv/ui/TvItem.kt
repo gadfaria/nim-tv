@@ -1,9 +1,10 @@
 package com.gadfaria.nimtv.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,19 +21,34 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.gadfaria.nimtv.ui.theme.NimBackground
-import com.gadfaria.nimtv.ui.theme.NimForeground
-import com.gadfaria.nimtv.ui.theme.NimForegroundMuted
+import com.gadfaria.nimtv.ui.theme.Accent
+import com.gadfaria.nimtv.ui.theme.Destructive
+import com.gadfaria.nimtv.ui.theme.Foreground
+import com.gadfaria.nimtv.ui.theme.InputBorder
+import com.gadfaria.nimtv.ui.theme.MutedForeground
+import com.gadfaria.nimtv.ui.theme.RadiusLg
+import com.gadfaria.nimtv.ui.theme.RadiusMd
+import com.gadfaria.nimtv.ui.theme.Ring
+
+/** The look of a [TvItem], named after the shadcn component it mirrors. */
+enum class TvItemVariant {
+    /** SidebarMenuButton: plain text, accent background when focused. */
+    Menu,
+
+    /** Button variant="outline": always framed, for calls to action. */
+    Outline,
+}
 
 private val SELECT_KEYS = setOf(Key.DirectionCenter, Key.Enter, Key.NumPadEnter)
 
 /**
  * A focusable line of text: the only interactive element in Nim TV.
  *
- * Focus is shown by inverting the two colors — readable from the couch without
- * adding a third color.
+ * Focus looks like hub's active sidebar item (accent background, medium weight)
+ * plus a 2dp ring, so it reads from the couch.
  *
  * Holding OK (or pressing the remote's Menu key) is the TV's long press. The
  * click fires on key UP, and only if this item also saw the key DOWN: otherwise
@@ -45,22 +61,42 @@ fun TvItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    variant: TvItemVariant = TvItemVariant.Menu,
     style: TextStyle = MaterialTheme.typography.titleMedium,
     muted: Boolean = false,
+    destructive: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
     var longPressFired by remember { mutableStateOf(false) }
 
+    val shape = if (variant == TvItemVariant.Outline) RadiusLg else RadiusMd
+    val borderColor = when {
+        focused -> Ring
+        variant == TvItemVariant.Outline -> InputBorder
+        else -> Color.Transparent
+    }
+    val borderWidth = if (focused) 2.dp else 1.dp
+    val background = when {
+        // focus:bg-destructive/10, as in shadcn's destructive menu item.
+        focused && destructive -> Destructive.copy(alpha = 0.1f)
+        focused -> Accent
+        // dark:bg-input/30 on shadcn's outline button.
+        variant == TvItemVariant.Outline -> InputBorder.copy(alpha = 0.045f)
+        else -> Color.Transparent
+    }
+
     Text(
         text = text,
         style = style,
+        fontWeight = if (focused) FontWeight.Medium else null,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         color = when {
-            focused -> NimBackground
-            muted -> NimForegroundMuted
-            else -> NimForeground
+            destructive -> Destructive
+            focused -> Foreground
+            muted -> MutedForeground
+            else -> Foreground
         },
         modifier = modifier
             .onFocusChanged {
@@ -93,10 +129,9 @@ fun TvItem(
                 }
             }
             .focusable()
-            .background(
-                color = if (focused) NimForeground else Color.Transparent,
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .fillMaxWidth()
+            .border(borderWidth, borderColor, shape)
+            .background(background, shape)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
