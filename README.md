@@ -10,9 +10,19 @@ Separator, Dialog and sidebar-item shapes rebuilt in Compose (`ui/theme/Theme.kt
 
 Built with Kotlin + Jetpack Compose, for personal use (TCL Google TV).
 
+## Screenshots
+
+Taken on the Google TV emulator (1080p).
+
+![Home: clock, favorites and the "powered by gadfaria" signature](docs/screenshots/home.png)
+
+| All apps | Search (`yt`) | Long-press menu |
+| --- | --- | --- |
+| ![A–Z grid of every app](docs/screenshots/apps.png) | ![Search finding YouTube by its initials](docs/screenshots/search.png) | ![Menu with favorite, move, app info and uninstall](docs/screenshots/menu.png) |
+
 ## Features
 
-- **Home** with clock, date and favorites. `todos os apps` opens the grid.
+- **Home** with clock, date and favorites. `Todos os apps` opens the grid.
 - **A–Z grid** in four columns, with search one press up (same ranking as the
   phone Nim: `yt` finds YouTube, `cam` finds Câmera).
 - **Hold OK** (or the remote's Menu key) on an app: favorite, move, app info
