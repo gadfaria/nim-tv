@@ -103,17 +103,26 @@ fun HomeScreen(
                 text = "Ativar o botão Home em Acessibilidade",
                 style = MaterialTheme.typography.bodyLarge,
                 muted = true,
-                onClick = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }
-                },
+                onClick = { openAccessibilitySettings(context) },
             )
         }
     }
+}
+
+/**
+ * Some TV builds (TCL on Android 11) don't handle the standard action and only
+ * expose accessibility through the TV settings' OEM link.
+ */
+private fun openAccessibilitySettings(context: Context) {
+    val actions = listOf(
+        AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS,
+        "android.settings.ACCESSIBILITY_TV_OEM_LINK",
+    )
+    actions.firstNotNullOfOrNull { action ->
+        Intent(action)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .takeIf { it.resolveActivity(context.packageManager) != null }
+    }?.let { context.startActivity(it) }
 }
 
 /** While moving, up/down reorder instead of moving focus; OK confirms. */

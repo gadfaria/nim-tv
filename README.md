@@ -1,6 +1,6 @@
 # Nim TV
 
-The [Nim](../nim) launcher, for Google TV. Text only: a clock, your favorites
+The Nim launcher, for Google TV. Text only: a clock, your favorites
 and an A–Z grid of every app, driven by the remote.
 
 Built with Kotlin + Jetpack Compose, for personal use (TCL Google TV).
@@ -18,10 +18,16 @@ Built with Kotlin + Jetpack Compose, for personal use (TCL Google TV).
 ## Why an accessibility service
 
 Google TV ignores third-party HOME activities: the Home button always opens
-Google's launcher. `HomeRedirectService` watches which app comes to the front
-and, when it's the stock launcher, opens Nim TV over it. It only receives
-window-change events, never screen content. The cost is a brief flash of the
-stock launcher.
+Google's launcher. `HomeRedirectService` covers it two ways:
+
+- **Home key:** consumed before the system sees it, then Nim TV opens. Reacting
+  after the system handled Home doesn't work on Android 11: activity starts
+  from other apps are held back for ~5 s after a Home press. Side effect: a
+  long press on Home does nothing.
+- **Stock launcher in front** (Back out of an app, boot): Nim TV opens over it,
+  with a brief flash.
+
+It only receives window-change and key events, never screen content.
 
 The alternative, disabling the stock launcher with `pm disable-user`, breaks
 input switching and settings shortcuts on some TCL models, so it isn't used.
@@ -45,12 +51,37 @@ adb connect <tv-ip>:5555
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Then turn on the Home button: Settings › System › Accessibility › Nim TV, or:
+On macOS, if `adb connect` says *No route to host* while the TV answers ping,
+the terminal app lacks System Settings › Privacy & Security › Local Network.
 
-```sh
-adb shell settings put secure enabled_accessibility_services com.gadfaria.nimtv/com.gadfaria.nimtv.HomeRedirectService
-adb shell settings put secure accessibility_enabled 1
-```
+### Turning on the Home button (TCL, Android 11)
+
+1. TCL blocks system-started services of apps without its auto-start
+   permission (`TclAppBoot` in logcat). Allow it for Nim TV:
+
+   ```sh
+   adb shell appops set com.gadfaria.nimtv APP_AUTO_START allow
+   ```
+
+2. Turn on Settings › System › Accessibility › Services › Nim TV. This TCL
+   has no standard `ACCESSIBILITY_SETTINGS` screen, only
+   `android.settings.ACCESSIBILITY_TV_OEM_LINK` — the in-app shortcut tries both.
+
+3. Check it's running (`Bound services` must list Nim TV):
+
+   ```sh
+   adb shell dumpsys accessibility | grep "Bound services"
+   ```
+
+   If it's enabled but not bound, re-trigger the binding:
+
+   ```sh
+   adb shell settings put secure enabled_accessibility_services '""'
+   adb shell settings put secure enabled_accessibility_services com.gadfaria.nimtv/com.gadfaria.nimtv.HomeRedirectService
+   ```
+
+A Home pressed with `adb shell input keyevent HOME` bypasses the accessibility
+key filter, so it opens Nim TV only after the ~5 s delay. Test with the remote.
 
 ## Tests
 
