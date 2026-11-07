@@ -1,5 +1,10 @@
 package com.gadfaria.nimtv.ui
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -11,11 +16,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.gadfaria.nimtv.ui.theme.Accent
 import com.gadfaria.nimtv.ui.theme.Background
 import com.gadfaria.nimtv.ui.theme.Border
 import com.gadfaria.nimtv.ui.theme.MutedForeground
+import com.gadfaria.nimtv.ui.theme.RadiusMd
 import com.gadfaria.nimtv.ui.theme.RadiusXl
 
 /** shadcn's Card: rounded-xl, bg-card, ring-1 ring-foreground/10. */
@@ -51,4 +60,33 @@ fun Separator(modifier: Modifier = Modifier) {
             .height(1.dp)
             .background(Border),
     )
+}
+
+// Uneven widths read as text lines rather than a progress bar.
+private val SKELETON_WIDTHS = listOf(0.55f, 0.4f, 0.48f)
+
+/**
+ * shadcn's Skeleton: accent blocks with a slow pulse, shaped like the rows
+ * they stand in for (same height as a [TvItem]).
+ */
+@Composable
+fun SkeletonRows(modifier: Modifier = Modifier) {
+    val pulse by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 900), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    Column(modifier) {
+        SKELETON_WIDTHS.forEach { width ->
+            Box(
+                Modifier
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxWidth(width)
+                    .height(20.dp)
+                    .graphicsLayer { alpha = pulse }
+                    .background(Accent, RadiusMd),
+            )
+        }
+    }
 }

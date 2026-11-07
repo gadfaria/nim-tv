@@ -8,10 +8,13 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.provider.Settings as AndroidSettings
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import java.text.Collator
 
 /**
@@ -29,12 +32,15 @@ class AppRepository(context: Context) {
     // Real alphabetical order: "Câmera" next to "Camera", not after "Z".
     private val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
 
-    /** Emits the current list and re-emits on every install, uninstall or update. */
+    /**
+     * Emits the current list and re-emits on every install, uninstall or update.
+     *
+     * The receiver only signals; the list is read on IO. Reading every app's
+     * label is slow on TV hardware and used to block the first frame.
+     */
     val apps: Flow<List<AppInfo>> = callbackFlow {
-        fun push() = trySend(load())
-
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context?, intent: Intent?) = Unit.also { push() }
+            override fun onReceive(c: Context?, intent: Intent?) = Unit.also { trySend(Unit) }
         }
         // Package broadcasts only arrive with the "package" data scheme set.
         val filter = IntentFilter().apply {
@@ -46,9 +52,13 @@ class AppRepository(context: Context) {
         }
         // EXPORTED: these broadcasts come from the system, not from this app.
         ContextCompat.registerReceiver(appContext, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
-        push()
+        trySend(Unit)
         awaitClose { appContext.unregisterReceiver(receiver) }
-    }.conflate()
+    }
+        // A burst of package events while a load runs collapses into one reload.
+        .conflate()
+        .map { load() }
+        .flowOn(Dispatchers.IO)
 
     private fun load(): List<AppInfo> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)

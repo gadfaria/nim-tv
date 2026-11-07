@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -26,27 +27,29 @@ class NimTvViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AppRepository(application)
     private val settings = Settings(application)
 
-    private val allApps: StateFlow<List<AppInfo>> = repository.apps.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
+    /** Null until the first load finishes: "loading", not "no apps". */
+    private val allApps: StateFlow<List<AppInfo>?> = repository.apps.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5_000), null,
     )
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
     val visibleApps: StateFlow<List<AppInfo>> =
-        combine(allApps, _query) { apps, query ->
+        combine(allApps.filterNotNull(), _query) { apps, query ->
             rankBySearch(apps, normalizeForSearch(query.trim())) { it.searchable }.items
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
-     * Favorites resolved to apps, in the stored order. A key with no matching
-     * app is ignored, not deleted: the app may be mid-update.
+     * Favorites resolved to apps, in the stored order; null while loading. A
+     * key with no matching app is ignored, not deleted: the app may be
+     * mid-update.
      */
-    val favorites: StateFlow<List<AppInfo>> =
-        combine(allApps, settings.favoriteKeys) { apps, keys ->
+    val favorites: StateFlow<List<AppInfo>?> =
+        combine(allApps.filterNotNull(), settings.favoriteKeys) { apps, keys ->
             val byKey = apps.associateBy { it.key }
             keys.mapNotNull { byKey[it] }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val favoriteKeys: StateFlow<Set<String>> = settings.favoriteKeys
         .map { it.toSet() }
@@ -91,7 +94,7 @@ class NimTvViewModel(application: Application) : AndroidViewModel(application) {
 
     fun moveMovingFavorite(delta: Int) {
         val key = _movingKey.value ?: return
-        val visible = allApps.value.mapTo(HashSet()) { it.key }
+        val visible = allApps.value.orEmpty().mapTo(HashSet()) { it.key }
         viewModelScope.launch { settings.updateFavorites { it.moved(key, delta, visible) } }
     }
 

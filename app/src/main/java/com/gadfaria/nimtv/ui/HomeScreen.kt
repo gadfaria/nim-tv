@@ -28,8 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -49,10 +51,12 @@ import com.gadfaria.nimtv.ui.theme.MutedForeground
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
-    favorites: List<AppInfo>,
+    /** Null while loading. */
+    favorites: List<AppInfo>?,
     movingKey: String?,
     homeRedirectRunning: Boolean,
     onLaunch: (AppInfo) -> Unit,
@@ -66,9 +70,19 @@ fun HomeScreen(
     val firstItem = remember { FocusRequester() }
 
     // Keyed on emptiness, not on the list: reordering must not yank focus back
-    // to the top while the user is moving a favorite.
-    LaunchedEffect(favorites.isEmpty()) {
-        runCatching { firstItem.requestFocus() }
+    // to the top while the user is moving a favorite. Nothing is focused while
+    // loading, so focus doesn't jump from "Todos os apps" to the first favorite.
+    val isEmpty = favorites?.isEmpty()
+    LaunchedEffect(isEmpty) {
+        if (isEmpty != null) runCatching { firstItem.requestFocus() }
+    }
+
+    // After a cold start the service binds a few seconds after the first frame;
+    // waiting avoids flashing the hint when the Home button already works.
+    var hintAllowed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(HINT_GRACE_MS)
+        hintAllowed = true
     }
 
     BackHandler(enabled = movingKey != null, onBack = onStopMoving)
@@ -87,7 +101,7 @@ fun HomeScreen(
 
             Spacer(Modifier.weight(1f))
 
-            if (!homeRedirectRunning) {
+            if (!homeRedirectRunning && hintAllowed) {
                 TvItem(
                     text = "Ativar o botão Home em Acessibilidade",
                     style = MaterialTheme.typography.bodyLarge,
@@ -112,7 +126,9 @@ fun HomeScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
             ) {
-                if (favorites.isEmpty()) {
+                if (favorites == null) {
+                    SkeletonRows()
+                } else if (favorites.isEmpty()) {
                     // CardDescription: what to do, instead of an empty card.
                     Text(
                         text = "Segure OK num app para favoritar.",
@@ -122,7 +138,7 @@ fun HomeScreen(
                     )
                 }
 
-                favorites.forEachIndexed { index, app ->
+                favorites?.forEachIndexed { index, app ->
                     // key() keeps the focused node attached to its app as the list reorders.
                     key(app.key) {
                         val moving = app.key == movingKey
@@ -144,13 +160,19 @@ fun HomeScreen(
                 text = "Todos os apps",
                 onClick = onOpenApps,
                 muted = true,
-                modifier = if (favorites.isEmpty()) Modifier.focusRequester(firstItem) else Modifier,
+                modifier = Modifier
+                    // The system focuses the first focusable view on its own;
+                    // while loading that would be this, then jump to a favorite.
+                    .focusProperties { canFocus = isEmpty != null }
+                    .then(if (isEmpty == true) Modifier.focusRequester(firstItem) else Modifier),
             )
         }
     }
 }
 
 private val CONTENT_WIDTH = 440.dp
+
+private const val HINT_GRACE_MS = 10_000L
 
 /** Author credit, quiet like a sidebar footer: muted, with the nick a step brighter. */
 @Composable
