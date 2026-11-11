@@ -18,6 +18,8 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: NimTvViewModel by viewModels()
 
+    private val markStable = Runnable { (application as NimTvApplication).crashGuard.reset() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -35,9 +37,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Staying up this long means it isn't crash-looping (anymore).
+        window.decorView.postDelayed(markStable, STABLE_AFTER_MS)
+    }
+
+    override fun onPause() {
+        window.decorView.removeCallbacks(markStable)
+        super.onPause()
+    }
+
     /** HOME (or the redirect service) while Nim TV is already open. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         viewModel.goHome()
+    }
+
+    private companion object {
+        const val STABLE_AFTER_MS = 5_000L
     }
 }

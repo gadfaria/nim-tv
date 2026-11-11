@@ -31,6 +31,8 @@ class HomeRedirectService : AccessibilityService() {
     /** One window change fires several events; one launch is enough. */
     private var lastLaunchAt = 0L
 
+    private val crashGuard get() = (application as NimTvApplication).crashGuard
+
     override fun onServiceConnected() {
         stockLaunchers = KNOWN_STOCK_LAUNCHERS + installedHomePackages()
         _running.value = true
@@ -43,6 +45,8 @@ class HomeRedirectService : AccessibilityService() {
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode != KeyEvent.KEYCODE_HOME) return false
+        // Crash-looping: give the Home key back to the system.
+        if (crashGuard.tripped) return false
         // Down and up are both consumed, so the system never runs its Home action.
         if (event.action == KeyEvent.ACTION_UP) openNim()
         return true
@@ -51,6 +55,7 @@ class HomeRedirectService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         if (event.packageName?.toString() !in stockLaunchers) return
+        if (crashGuard.tripped) return
         val now = SystemClock.uptimeMillis()
         if (now - lastLaunchAt < DEBOUNCE_MS) return
         lastLaunchAt = now

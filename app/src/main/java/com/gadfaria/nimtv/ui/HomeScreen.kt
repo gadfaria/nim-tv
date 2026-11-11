@@ -39,6 +39,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +51,6 @@ import com.gadfaria.nimtv.ui.theme.Foreground
 import com.gadfaria.nimtv.ui.theme.MutedForeground
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
@@ -255,7 +255,7 @@ private fun rememberCurrentTime(): State<LocalDateTime> {
 private fun Clock() {
     val now by rememberCurrentTime()
     val context = LocalContext.current
-    val locale = Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
 
     // 12h/24h follows the system setting, like the system clock.
     val use24h = DateFormat.is24HourFormat(context)

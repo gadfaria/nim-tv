@@ -17,7 +17,6 @@ android {
 
     buildTypes {
         debug {
-            // Personal-use TV launcher: the debug build is the one that stays on the device.
             isMinifyEnabled = false
         }
         release {
@@ -27,6 +26,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // The build that stays on the TV: release (R8, not debuggable) signed
+        // with the debug key, so it installs over a debug build without an
+        // uninstall — which would drop the favorites and the accessibility grant.
+        create("tv") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
         }
     }
 

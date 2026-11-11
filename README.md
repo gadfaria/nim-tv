@@ -44,6 +44,10 @@ Google's launcher. `HomeRedirectService` covers it two ways:
 
 It only receives window-change and key events, never screen content.
 
+If Nim TV crashes three times within a minute, the service stands down (Home
+goes back to Google's launcher) so a startup bug can't trap the TV in a crash
+loop. Opening Nim TV and keeping it up for a few seconds re-arms it.
+
 The alternative, disabling the stock launcher with `pm disable-user`, breaks
 input switching and settings shortcuts on some TCL models, so it isn't used.
 
@@ -61,10 +65,15 @@ Settings › System › Developer options › enable *USB debugging* (and *Wirel
 debugging* / network debugging, if listed).
 
 ```sh
-./gradlew :app:assembleDebug
+./gradlew :app:assembleTv
 adb connect <tv-ip>:5555
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/tv/app-tv.apk
 ```
+
+`tv` is the release build (R8, not debuggable, ~1.5 MB instead of ~13 MB)
+signed with this machine's debug key, so it installs over a debug build without
+an uninstall. Turn USB debugging off again when you're done: it keeps port 5555
+open on your network.
 
 On macOS, if `adb connect` says *No route to host* while the TV answers ping,
 the terminal app lacks System Settings › Privacy & Security › Local Network.

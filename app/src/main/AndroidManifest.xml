@@ -26,6 +26,7 @@
     </queries>
 
     <application
+        android:name=".NimTvApplication"
         android:allowBackup="true"
         android:banner="@drawable/banner"
         android:icon="@mipmap/ic_launcher"
